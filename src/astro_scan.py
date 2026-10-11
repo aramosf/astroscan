@@ -232,9 +232,10 @@ def sanitized_headers(headers: Any) -> dict[str, str]:
 
 
 class HTTPClient:
-    def __init__(self, timeout: float, user_agent: str):
+    def __init__(self, timeout: float, user_agent: str, extra_headers: dict[str, str] | None = None):
         self.timeout = timeout
         self.user_agent = user_agent
+        self.extra_headers = dict(extra_headers or {})
         self.records: list[dict[str, Any]] = []
 
     def request(
@@ -252,7 +253,7 @@ class HTTPClient:
         path = parsed.path or "/"
         if parsed.query:
             path += "?" + parsed.query
-        connection_headers = {"User-Agent": self.user_agent, "Accept": "*/*"}
+        connection_headers = {"User-Agent": self.user_agent, "Accept": "*/*", **self.extra_headers}
         if headers:
             connection_headers.update({key: value for key, value in headers.items() if value is not None})
 
@@ -1154,6 +1155,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--delay", type=float, default=0.25)
     parser.add_argument("--fail-on-finding", action="store_true")
     parser.add_argument("--user-agent", default="AstroScan/1.0 (authorized-security-test)")
+    parser.add_argument("--header", action="append", default=[], help="Extra 'Name: value' header sent on every request (e.g. a program's research header); repeatable")
 
     base = parser.add_argument_group("base-path bypass")
     base.add_argument("--base-path", default="/app")
@@ -1310,8 +1312,20 @@ def render_human_report(report: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def parse_extra_headers(values: list[str]) -> dict[str, str]:
+    headers: dict[str, str] = {}
+    for value in values:
+        name, separator, content = value.partition(":")
+        name = name.strip()
+        if not separator or not re.fullmatch(r"[A-Za-z0-9!#$%&'*+.^_`|~-]+", name) or any(char in content for char in "\r\n"):
+            raise ValueError(f"Invalid --header {value!r}; expected 'Name: value'")
+        headers[name] = content.strip()
+    return headers
+
+
 def validate_args(args: argparse.Namespace) -> tuple[str, list[str]]:
     target = normalize_origin(args.target)
+    parse_extra_headers(args.header)
     scopes = [normalize_origin(value) for value in args.scope]
     parsed = urllib.parse.urlsplit(target)
     local = is_local_hostname(parsed.hostname)
@@ -1437,7 +1451,7 @@ def run(args: argparse.Namespace) -> int:
     findings: list[Finding] = []
     try:
         callback_server, callback_url = start_callback(args)
-        client = HTTPClient(args.timeout, args.user_agent)
+        client = HTTPClient(args.timeout, args.user_agent, parse_extra_headers(args.header))
         fingerprint_finding = run_fingerprint(client, target, args)
         findings.append(fingerprint_finding)
         version = next(
@@ -1509,6 +1523,7 @@ def run(args: argparse.Namespace) -> int:
                 "timeout_seconds": args.timeout,
                 "delay_seconds": args.delay,
                 "marker_supplied": bool(args.marker),
+                "extra_headers": sorted(parse_extra_headers(args.header)),
             },
             "astro_versions": sorted(
                 {

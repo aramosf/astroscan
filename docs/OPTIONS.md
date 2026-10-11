@@ -21,6 +21,7 @@ are collapsed. Repeatable options are marked *(repeatable)*.
 | `--timeout SECONDS` | `8.0` | Per-request timeout. Must be positive. |
 | `--delay SECONDS` | `0.25` | Pause between requests/modules. Must not be negative. Raise it to meet program rate limits. |
 | `--fail-on-finding` | off | Exit with `1` when the overall status is `vulnerable` (useful in CI). |
+| `--header 'Name: value'` | — | Extra header on every request *(repeatable)*, e.g. a program's mandatory research header. Names are listed (not values) in `configuration.extra_headers`. |
 | `--user-agent TEXT` | `AstroScan/1.0 (authorized-security-test)` | `User-Agent` for every request. Some programs require a specific header value. |
 
 ## Version fingerprint
