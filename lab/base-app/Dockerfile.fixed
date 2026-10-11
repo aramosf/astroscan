@@ -1,0 +1,4 @@
+FROM astro-base-bypass-vulnerable
+WORKDIR /app
+RUN npm install --save --omit=dev astro@7.2.4 @astrojs/internal-helpers@0.10.4
+RUN npm run build

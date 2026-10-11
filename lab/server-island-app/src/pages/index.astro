@@ -1,0 +1,14 @@
+---
+import ComponentA from '../components/ComponentA.astro';
+import ComponentB from '../components/ComponentB.astro';
+
+const shared = Astro.url.searchParams.get('shared') ?? 'default';
+---
+
+<html lang="en">
+  <head><meta name="generator" content={Astro.generator} /></head>
+  <body>
+    <ComponentA server:defer shared={shared} />
+    <ComponentB server:defer><p slot="shared">benign slot</p></ComponentB>
+  </body>
+</html>

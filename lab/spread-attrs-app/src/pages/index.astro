@@ -1,0 +1,9 @@
+---
+const props = JSON.parse(Astro.url.searchParams.get('props') || '{}');
+---
+
+<html lang="en">
+  <body>
+    <div {...props}>Move the pointer over this fixture</div>
+  </body>
+</html>

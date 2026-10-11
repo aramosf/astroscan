@@ -1,0 +1,11 @@
+---
+import MyElement from '../components/MyElement.js';
+
+const props = JSON.parse(Astro.url.searchParams.get('props') || '{}');
+---
+
+<html lang="en">
+  <body>
+    <MyElement {...props}>Custom element fixture</MyElement>
+  </body>
+</html>

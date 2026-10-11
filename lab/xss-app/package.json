@@ -1,0 +1,10 @@
+{
+  "name": "astro-xss-version-fixture",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "astro build",
+    "dev": "astro dev",
+    "start": "node ./dist/server/entry.mjs"
+  }
+}

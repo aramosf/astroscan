@@ -1,0 +1,11 @@
+---
+import { fade } from 'astro:transitions';
+
+const duration = Astro.url.searchParams.get('duration') ?? '300ms';
+---
+
+<html lang="en">
+  <body>
+    <div transition:animate={fade({ duration })}>Animated fixture</div>
+  </body>
+</html>

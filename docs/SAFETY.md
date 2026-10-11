@@ -30,8 +30,9 @@ Gates record intent; they do not grant permission. Read the program rules first.
   cloud-metadata addresses or third-party hosts are ever generated.
 - **CSRF:** one request to the endpoint and body you specify.
 - **Authorization bypass:** two `GET` requests per check; nothing is modified.
-- **Memory corruption:** the crafted AVIF/HEIF input for GHSA-26w7-cxv4-gfx2 is
-  **not** included and never transmitted.
+- **Memory corruption:** the crafted HEIC for GHSA-26w7-cxv4-gfx2 is never
+  transmitted by the scanner. Its generator (`lab/generate_heic_poc.py`) exists
+  only for the local ASan laboratory; see [`LAB.md`](LAB.md).
 - **Volume:** a fingerprint-only run makes at most 1 + 8 requests by default; the
   `sourcemaps` module up to 1 + 20. `--delay` (0.25 s) separates requests and
   modules.

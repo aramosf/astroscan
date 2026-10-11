@@ -1,0 +1,8 @@
+{
+  "name": "astro-dev-error-xss-fixture",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev"
+  }
+}

@@ -1,0 +1,11 @@
+---
+const name = Astro.url.searchParams.get('name') ?? 'World';
+---
+
+<html lang="en">
+  <body>
+    <script define:vars={{ name }}>
+      console.log(name);
+    </script>
+  </body>
+</html>

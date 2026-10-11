@@ -1,0 +1,14 @@
+---
+import Island from '../components/Island.jsx';
+
+const transitionProps = {
+  'data-astro-transition-persist': Astro.url.searchParams.get('persist') ?? 'default',
+};
+
+---
+
+<html lang="en">
+  <body>
+    <Island client:load {...transitionProps} />
+  </body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "astro-server-island-replay-fixture",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "astro build",
+    "start": "node ./dist/server/entry.mjs"
+  }
+}

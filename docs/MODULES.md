@@ -307,7 +307,8 @@ needs separate, explicit authorization and is out of scope for this tool.
 
 - **GHSA-26w7-cxv4-gfx2** (AVIF/libheif heap overflow through Sharp, fixed in
   Astro 7.2.8 / Sharp 0.35.4): the crafted memory-corruption input is
-  intentionally **never** sent to a target. The version assessment still flags
+  intentionally **never** sent to a target; it is reproduced only in the local
+  ASan laboratory ([`LAB.md`](LAB.md)). The version assessment still flags
   affected versions.
 - Other advisories in `advisories/` (open redirect, `X-Forwarded-Host`
   reflection, dev-server file read, Cloudflare stored XSS, DOM clobbering…) are

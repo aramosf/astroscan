@@ -1,0 +1,13 @@
+services:
+  libheif-vulnerable:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        LIBHEIF_REF: v1.23.1
+  libheif-fixed:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        LIBHEIF_REF: v1.23.2

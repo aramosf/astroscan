@@ -1,0 +1,13 @@
+---
+import Wrapper from '../components/Wrapper.jsx';
+
+const slotName = Astro.url.searchParams.get('tab') ?? 'default';
+---
+
+<html lang="en">
+  <body>
+    <Wrapper client:load>
+      <div slot={slotName}>Slot fixture</div>
+    </Wrapper>
+  </body>
+</html>

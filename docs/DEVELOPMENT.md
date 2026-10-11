@@ -50,8 +50,9 @@ vulnerable version and stop matching at the fixed version.
 4. Add the options in `parse_args()` and any mandatory-input check in
    `validate_args()` so that a run without them is refused before sending.
 5. Dispatch it in `run()`.
-6. Validate it against a vulnerable/fixed pair of Astro builds: the module must
-   report `vulnerable` on the vulnerable build and not on the fixed one.
+6. Validate it against a vulnerable/fixed pair of Astro builds: add a fixture
+   under `lab/` and a pair of `assert_vulnerable`/`assert_fixed` steps to
+   `lab/run_priority_matrix.sh` (see [`LAB.md`](LAB.md)).
 7. Add unit tests for any payload or URL builder, and document the module in
    `docs/MODULES.md`, `docs/OPTIONS.md` and the README table.
 

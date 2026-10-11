@@ -1,0 +1,9 @@
+{
+  "name": "astro-custom-element-fixture",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "astro build",
+    "start": "node ./dist/server/entry.mjs"
+  }
+}

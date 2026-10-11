@@ -105,7 +105,9 @@ module prints the detected version and the number of matching advisories first.
 | `image-proxy-ssrf` | CVE-2025-59837 / GHSA-qcpr-679q-rhm2 | 5.13.10 | Callback received or callback token returned |
 
 `--modules all` runs everything; modules whose mandatory inputs are missing are
-refused before any request is sent. Detail per module — payloads, options and
+refused before any request is sent. Every module is validated against a
+vulnerable/fixed pair of Docker fixtures in `lab/` ([`docs/LAB.md`](docs/LAB.md)).
+Detail per module — payloads, options and
 limits — in [`docs/MODULES.md`](docs/MODULES.md).
 
 ## Output
@@ -128,11 +130,13 @@ Format reference: [`docs/REPORT-FORMAT.md`](docs/REPORT-FORMAT.md).
 ├─ src/astro_scan.py        # the scanner (single file, stdlib only)
 ├─ tests/test_astro_scan.py # unit tests (no network)
 ├─ advisories/              # OSV/GHSA records used for version assessment
+├─ lab/                     # Docker vulnerable/fixed fixtures and regression suites
 └─ docs/
    ├─ MODULES.md            # per-module reference
    ├─ OPTIONS.md            # full CLI reference with defaults
    ├─ REPORT-FORMAT.md      # JSON evidence schema and statuses
    ├─ SAFETY.md             # authorization gates and safety model
+   ├─ LAB.md                # laboratories and regression suites
    └─ DEVELOPMENT.md        # tests, refreshing advisories, adding a module
 ```
 
@@ -145,6 +149,7 @@ The scanner locates `advisories/` relative to its own location
 - [Command-line options](docs/OPTIONS.md)
 - [Evidence report format](docs/REPORT-FORMAT.md)
 - [Safety model](docs/SAFETY.md)
+- [Laboratories](docs/LAB.md)
 - [Development](docs/DEVELOPMENT.md)
 
 ## Legal and ethical use
