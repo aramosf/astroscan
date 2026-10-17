@@ -2,10 +2,13 @@
 
 ## Tests
 
-The unit tests cover origin normalization, path encoding, version extraction and
-range matching, the HTML-context classifier, URL builders for the server-island
-and image-proxy modules, the callback listener and the human report. They make no
-network connection to external hosts.
+The unit tests cover origin normalization (including IPv6), path encoding,
+version extraction and range matching, the HTML-context classifier, URL builders
+for the server-island and image-proxy modules, the callback listener, profiles
+and skip planning, config/list/header/cookie parsing, request-header redaction,
+decompression, redirect/retry/budget behaviour of the HTTP client, SARIF output
+and the human report. They make no network connection to external hosts; the HTTP
+client tests use a loopback fixture.
 
 ```bash
 PYTHONPATH=src python3 -m unittest discover -s tests -v
@@ -40,16 +43,18 @@ vulnerable version and stop matching at the fixed version.
 
 ## Adding a module
 
-1. Add the name to `SUPPORTED_MODULES`.
+1. Add the name to `SUPPORTED_MODULES` and `MODULE_REQUIREMENTS`.
 2. Write `run_<module>(client, target, args) -> Finding`. Use `client.request`
-   (it records every transaction) and `args.delay` between requests.
+   (it records every transaction and enforces `--delay`, `--rate-limit`,
+   retries, redirect policy and `--max-requests`; do not sleep in the module).
 3. Define the positive criterion so that it **discriminates**: compare against a
    baseline or control, and require a marker or token that only the vulnerable
    behaviour can produce. Fill `limitations` with what the positive does not
-   prove.
-4. Add the options in `parse_args()` and any mandatory-input check in
-   `validate_args()` so that a run without them is refused before sending.
-5. Dispatch it in `run()`.
+   prove. A transport error must yield `inconclusive`, not a negative result.
+4. Add the options in `parse_args()`, any config key in `CONFIG_KEYS`, and any
+   mandatory-input check in `module_missing_inputs()` so that explicit requests
+   fail before sending while profiles/`all` can skip with a reason.
+5. Dispatch it in `module_finding()`.
 6. Validate it against a vulnerable/fixed pair of Astro builds: add a fixture
    under `lab/` and a pair of `assert_vulnerable`/`assert_fixed` steps to
    `lab/run_priority_matrix.sh` (see [`LAB.md`](LAB.md)).

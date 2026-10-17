@@ -1,0 +1,20 @@
+# AstroScan defaults. Copy to astroscan.toml and edit.
+# CLI flags override these values. Keys use underscores; an optional
+# [astroscan] table is also accepted.
+
+# target = ["https://app.example.com"]
+# scope = ["https://app.example.com"]
+# authorization_statement = "@engagement.txt"
+# profile = "standard"
+# modules = "fingerprint,sourcemaps"
+# delay = 0.5
+# rate_limit = 2
+# max_requests = 200
+# max_retries = 2
+# follow_redirects = true
+# proxy = "http://127.0.0.1:8080"
+# insecure = false
+# header = ["X-Research: yes"]
+# cookie = ["session=replace-me"]
+# output_dir = "evidence"
+# format = "human"

@@ -41,10 +41,12 @@ Two design principles drive the tool:
 
 ## Quick start
 
-Help and module list:
+Help, version and module list:
 
 ```bash
 python3 src/astro_scan.py --help
+python3 src/astro_scan.py --version
+python3 src/astro_scan.py --list-modules
 ```
 
 Version fingerprint plus advisory assessment against a local fixture (loopback
@@ -55,7 +57,7 @@ python3 src/astro_scan.py --target http://127.0.0.1:4321 --modules fingerprint
 ```
 
 The same against an authorized remote target. All three gates are mandatory and
-the target must be listed **exactly** in `--scope`:
+the target must be listed **exactly** in `--scope` (or `--scope-file`):
 
 ```bash
 python3 src/astro_scan.py \
@@ -63,9 +65,41 @@ python3 src/astro_scan.py \
   --scope https://app.example.com \
   --allow-remote \
   --authorization-statement 'Example program, ticket 123: Astro checks approved' \
-  --modules fingerprint,sourcemaps \
-  --output evidence/app-example-com.json
+  --profile standard \
+  --dry-run
 ```
+
+Remove `--dry-run` to execute. `--dry-run` prints the resolved target(s), scope,
+profile, modules, skipped modules and their reasons, request budget and network
+configuration without sending a request.
+
+### Pentest workflow
+
+- **Profiles:** `--profile safe` runs fingerprint and source maps; `standard`
+  adds every non-destructive check; `full` adds `dev-error-xss` and `hono-csrf`.
+  Modules whose mandatory inputs are missing are **skipped with a reason** under
+  a profile or `--modules all`, instead of aborting the run. Explicitly naming a
+  module (`--modules base-bypass`) still fails fast when its inputs are missing.
+- **Scope and targets:** `--scope-file` and `--target-file` accept one exact
+  origin per line (`#` comments allowed). `--target` is repeatable and
+  `--output-dir` writes one evidence file per target plus `summary.json`.
+- **Authorized network paths:** `--proxy`, `--insecure`/`--cacert`, `--cookie`,
+  `--cookie-file`, `--bearer`, `--header-file` and `--resolve` cover Burp/ZAP,
+  self-signed certificates, authenticated engagements and split-DNS targets.
+- **Pacing:** `--delay` is a minimum interval between requests; `--rate-limit`
+  caps requests per second; `--max-retries` (default 1) retries transport errors
+  and `429/500/502/503/504` with exponential backoff and `Retry-After`;
+  `--max-requests` is a global budget.
+- **Redirects:** same-origin and in-scope redirects are followed by default
+  (`--no-follow-redirects` disables this). Redirects outside the authorized
+  origin/scope are recorded and not followed.
+- **Output:** `--format human|json|jsonl|sarif`, plus `--output PATH` (single
+  target) or `--output-dir DIR` (one JSON bundle per target). `--output` always
+  writes the canonical JSON evidence bundle regardless of the terminal format.
+- **Failure semantics:** transport errors produce `inconclusive` findings, not
+  false negatives. `--fail-on-transport-error` and `--fail-on-inconclusive`
+  turn those into exit code `2`; `--fail-on-finding` keeps exit code `1`.
+
 
 Authorization-bypass check (`/app/admin` versus `/appX/admin`), positive only if
 the baseline is `401/403` and the bypass returns your marker:
@@ -105,21 +139,24 @@ module prints the detected version and the number of matching advisories first.
 | `image-proxy-ssrf` | CVE-2025-59837 / GHSA-qcpr-679q-rhm2 | 5.13.10 | Callback received or callback token returned |
 
 `--modules all` runs everything; modules whose mandatory inputs are missing are
-refused before any request is sent. Every module is validated against a
-vulnerable/fixed pair of Docker fixtures in `lab/` ([`docs/LAB.md`](docs/LAB.md)).
-Detail per module — payloads, options and
+skipped with a reason (use `--dry-run` to see the plan first). Every module is
+validated against a vulnerable/fixed pair of Docker fixtures in `lab/`
+([`docs/LAB.md`](docs/LAB.md)). Detail per module — payloads, options and
 limits — in [`docs/MODULES.md`](docs/MODULES.md).
 
 ## Output
 
 - **Terminal:** human-readable report by default; `--format json` prints the full
-  JSON report to stdout instead.
+  JSON report to stdout, `jsonl` prints one finding per line, and `sarif` prints
+  a SARIF 2.1.0 document. `--quiet` suppresses the full human report.
 - **Evidence file:** `--output PATH` always writes the canonical JSON bundle
   (schema `astro-scan-evidence/1`): authorization context, configuration,
-  detected versions, version assessment, per-module findings and every HTTP
-  transaction (with `Set-Cookie`/auth headers redacted and bodies hashed).
+  detected versions, version assessment, per-module findings, skipped modules and
+  every HTTP transaction (with `Set-Cookie`/auth headers redacted and bodies
+  hashed). `--output-dir DIR` writes one file per target plus a summary.
 - **Exit codes:** `0` completed, `1` a `vulnerable` finding exists and
-  `--fail-on-finding` was given, `2` argument/authorization/network error.
+  `--fail-on-finding` was given, `2` argument/authorization/network error (or
+  `--fail-on-transport-error` / `--fail-on-inconclusive` matched).
 
 Format reference: [`docs/REPORT-FORMAT.md`](docs/REPORT-FORMAT.md).
 
@@ -128,9 +165,13 @@ Format reference: [`docs/REPORT-FORMAT.md`](docs/REPORT-FORMAT.md).
 ```
 .
 ├─ src/astro_scan.py        # the scanner (single file, stdlib only)
-├─ tests/test_astro_scan.py # unit tests (no network)
+├─ tests/test_astro_scan.py # unit tests (no external network)
 ├─ advisories/              # OSV/GHSA records used for version assessment
 ├─ lab/                     # Docker vulnerable/fixed fixtures and regression suites
+├─ pyproject.toml           # installable console script (`astroscan`)
+├─ astroscan.example.toml   # config-file example
+├─ LICENSE                  # MIT
+├─ .github/workflows/       # unit tests on Python 3.11–3.14
 └─ docs/
    ├─ MODULES.md            # per-module reference
    ├─ OPTIONS.md            # full CLI reference with defaults
@@ -140,8 +181,17 @@ Format reference: [`docs/REPORT-FORMAT.md`](docs/REPORT-FORMAT.md).
    └─ DEVELOPMENT.md        # tests, refreshing advisories, adding a module
 ```
 
+Install as a console script if desired:
+
+```bash
+python3 -m pip install .
+astroscan --version
+```
+
 The scanner locates `advisories/` relative to its own location
-(`src/../advisories`), so keep the two directories side by side.
+(`src/../advisories`), so keep the two directories side by side. The installed
+`astroscan` console script expects the `advisories/` directory to be available in
+the same layout; running from the repository is the supported deployment.
 
 ## Further documentation
 

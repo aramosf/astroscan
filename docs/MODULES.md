@@ -46,9 +46,10 @@ Generic signals (`<astro-island>`, `/_astro/*.js`, the word "Astro") are recorde
 as `signals` but never produce a version.
 
 **Statuses.** `astro-version-identified`, `astro-candidate` (signals but no
-version) or `no-astro-signal`. Confidence is `high` when the version comes from
-generator metadata or a package/lock file, `medium` for header/source-map
-sources.
+version) or `no-astro-signal`. A transport failure on the homepage yields
+`inconclusive`, not `no-astro-signal`. Confidence is `high` when the version comes
+from generator metadata, a package/lock file or an `Astro/X.Y.Z` response header,
+and `medium` for source-map sources.
 
 **Version assessment.** With an exact version, every `advisories/GHSA-*.json`
 record whose `SEMVER` range for the npm package `astro` contains that version is
@@ -128,7 +129,8 @@ where the marker landed:
 
 A positive proves the HTML-parser breakout needed for XSS. No JavaScript is
 executed and none is sent. If a program requires executable proof, replace the
-marker manually and only if its policy allows it.
+marker manually and only if its policy allows it. A transport error on the sink
+request yields `inconclusive`, not a negative result.
 
 The sink is application-specific: you must know (or have found) the route and
 query parameter that flow into the affected Astro API. Absence of the marker is
@@ -145,8 +147,9 @@ query parameter that flow into the affected Astro API. Absence of the marker is
 | `dev-error-xss` | CVE-2025-64745 / GHSA-w2vj-39qv-7vh7 — dev-server 404/error page | 5.15.6 | path `/"></script>` + marker + `<!--` (URL-encoded) | `--trailing-slash-mode` (`never` appends `/`, `always` does not) |
 | `server-island-reflected-xss` | CVE-2025-64764 / GHSA-wrwg-2hg8-v723 — arbitrary template via server-island slots | 5.15.8 | `GET /_server-islands/<name>?e=file&p=&s={"<slot>":"<marker>"}` | `--server-island-reflected-name` (`ComponentA`), `--server-island-reflected-slot` (`astro-scan`) |
 
-`dev-error-xss` targets the **development server** (`astro dev`). Use it only where
-an exposed dev server is explicitly in scope.
+`dev-error-xss` targets the **development server** (`astro dev`). It is refused
+unless `--allow-dev-server-check` is given; use it only where an exposed dev
+server is explicitly in scope.
 
 ---
 
@@ -165,7 +168,8 @@ be replayed as the slots of another.
 3. `GET /_server-islands/<target>?e=<target export>&p=&s=<source ciphertext>`.
 
 Positive: the replay response contains the marker raw. If either island reference
-is missing, the result is `not-vulnerable-or-not-applicable` with the reason.
+is missing, the result is `not-vulnerable-or-not-applicable` with the reason. A
+transport failure on either request yields `inconclusive`.
 
 Options: `--server-island-path` (`/`), `--server-island-param` (`shared`),
 `--server-island-source-name` (`ComponentA`), `--server-island-target-name`
@@ -220,7 +224,11 @@ Sends two image-endpoint requests (`<--remote-pattern-path>?href=…&f=svg`):
 1. the allowed control (`--remote-pattern-allowed-href`);
 2. the bypass (`--remote-pattern-bypass-href`).
 
-Positive: both return `200` and contain `--remote-pattern-marker`.
+Positive: both return `200`, are **image responses** (`Content-Type: image/*` or
+image magic bytes), and contain `--remote-pattern-marker`. A marker reflected in
+an HTML error page is reported as `inconclusive`, because it proves reflection
+but not that the image proxy fetched the URL. If the allowed control fails, the
+result is also `inconclusive`.
 
 Both URLs must point to a host **you control** that serves the marker; the module
 is refused without `--i-control-remote-host` and all three values. Default path
@@ -243,7 +251,7 @@ the defaults `/pages/index.astro.mjs.map`, `/dist/server/entry.mjs.map`,
 Positive: a `200` JSON document with `version` and a `sources` list. The evidence
 records the path, hash, source count, the first eight source names and the number
 of embedded `sourcesContent` entries; it stops after `--max-source-map-findings`
-(3).
+(3). A transport failure on the homepage yields `inconclusive`.
 
 **Limits.** Proves source disclosure. Severity rises only if the disclosed source
 contains secrets or sensitive logic — review it manually.
@@ -262,8 +270,14 @@ Both modules need a callback URL. Choose one:
   `astro-scan-callback:<token>`, so reflection can be proven.
 
 Either way `--i-control-callback` is mandatory. The modules never target internal
-addresses or third-party hosts. If no callback is configured, the SSRF modules are
-skipped silently. Wait time per check: `--callback-timeout` (5 s).
+addresses or third-party hosts. Explicitly requesting an SSRF module without a
+callback fails validation; under a profile or `--modules all` it is skipped with a
+reason. Wait time per check: `--callback-timeout` (5 s).
+
+For an external `--callback-url`, the scanner cannot read the callback server's
+log. Supply `--callback-proof-token <token>` (or `--callback-proof-file`) after
+confirming the callback; without that proof a reflected token alone is reported
+as `inconclusive`.
 
 ### host-header-ssrf
 
@@ -276,14 +290,16 @@ header.
 Sends `GET <--error-path>` (default `/astro-scan-nonexistent`) with
 `Host: <callback host:port>`.
 
-| Callback received | Token reflected in response | Status |
+| Callback verified | Token reflected in response | Status |
 |---|---|---|
 | yes | yes | `vulnerable` (high) |
 | yes | no | `callback-observed` (medium) — outbound fetch only |
-| no | — | `not-vulnerable-or-not-applicable` |
+| no | yes | `inconclusive` (low) — reflection alone is not fetch evidence |
+| no | no | `not-vulnerable-or-not-applicable` (low) |
 
-With an external `--callback-url` the scanner cannot see the callback log; a
-reflected token is then taken as proof of both.
+With an external `--callback-url`, callback verification requires
+`--callback-proof-token`/`--callback-proof-file`; reflection alone never produces
+a `vulnerable` verdict.
 
 ### image-proxy-ssrf
 
@@ -295,8 +311,9 @@ The image endpoint's domain check could be bypassed with a backslash-prefixed
 Sends `GET <--image-path>?href=\\<callback-host[:port]>/<path>&f=<--image-format>`
 (defaults `/_image`, `svg`).
 
-Positive: the callback was received **or** the response contains the callback
-token.
+Positive: a **verified callback** to the operator-controlled host. A callback
+token merely reflected in the response, without a verified callback, is reported
+as `inconclusive`.
 
 **Limits.** Proves a controlled outbound request only. Internal-network impact
 needs separate, explicit authorization and is out of scope for this tool.
