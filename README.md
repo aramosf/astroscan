@@ -100,7 +100,6 @@ configuration without sending a request.
   false negatives. `--fail-on-transport-error` and `--fail-on-inconclusive`
   turn those into exit code `2`; `--fail-on-finding` keeps exit code `1`.
 
-
 Authorization-bypass check (`/app/admin` versus `/appX/admin`), positive only if
 the baseline is `401/403` and the bypass returns your marker:
 
@@ -129,14 +128,14 @@ module prints the detected version and the number of matching advisories first.
 | `custom-element-xss` | CVE-2026-59729 / GHSA-f48w-9m4c-m7f5 | 7.0.6 | Inert marker inserted raw |
 | `slot-xss` | CVE-2026-50146 / GHSA-8hv8-536x-4wqp | 6.3.3 | Inert marker inserted raw |
 | `define-vars-xss` | CVE-2026-41067 / GHSA-j687-52p2-xcff | 6.1.6 | Inert marker inserted raw |
-| `dev-error-xss` | CVE-2025-64745 / GHSA-w2vj-39qv-7vh7 | 5.15.6 | Inert marker inserted raw (dev server only) |
+| `dev-error-xss` | CVE-2025-64745 / GHSA-w2vj-39qv-7vh7 | 5.15.6 | Inert marker inserted raw (dev server; requires `--allow-dev-server-check`) |
 | `server-island-reflected-xss` | CVE-2025-64764 / GHSA-wrwg-2hg8-v723 | 5.15.8 | Inert marker inserted raw |
 | `server-island-replay` | CVE-2026-45028 / GHSA-xr5h-phrj-8vxv | 6.1.10 | Replayed ciphertext renders marker raw |
 | `hono-csrf` | CVE-2026-73423 / GHSA-8mv7-9c27-98vc | 7.0.6 | `200` + your harmless state-change marker |
-| `remote-pattern-bypass` | CVE-2026-33769 / GHSA-g735-7g2w-hh3f | 5.18.1 | Allowed control and bypass both return your marker |
+| `remote-pattern-bypass` | CVE-2026-33769 / GHSA-g735-7g2w-hh3f | 5.18.1 | Allowed control and bypass both return your marker in an image response |
 | `sourcemaps` | CVE-2024-56159 / GHSA-49w6-73cw-chjr | 5.0.8 | Valid source map (`version` + `sources`) served |
-| `host-header-ssrf` | CVE-2026-54299 / GHSA-2pvr-wf23-7pc7 | 6.4.6 | Callback received **and** callback token reflected |
-| `image-proxy-ssrf` | CVE-2025-59837 / GHSA-qcpr-679q-rhm2 | 5.13.10 | Callback received or callback token returned |
+| `host-header-ssrf` | CVE-2026-54299 / GHSA-2pvr-wf23-7pc7 | 6.4.6 | Verified callback **and** callback token reflected |
+| `image-proxy-ssrf` | CVE-2025-59837 / GHSA-qcpr-679q-rhm2 | 5.13.10 | Verified callback (token reflection alone is `inconclusive`) |
 
 `--modules all` runs everything; modules whose mandatory inputs are missing are
 skipped with a reason (use `--dry-run` to see the plan first). Every module is
